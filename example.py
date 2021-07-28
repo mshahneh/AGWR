@@ -30,7 +30,7 @@ import numpy as np
 from SMGWR.SpaceSearch import SpaceSearch
 import multiprocessing
 from helpers.SampleModules.SpatialModules import gwr_module, mgwr_module, smgwr_module
-from helpers.SampleModules.MLModules import random_forrest
+from helpers.SampleModules.MLModules import random_forrest, neural_network
 from ModularFramework.ModularFramework import ModularFramework
 
 
@@ -90,6 +90,8 @@ def module_selection(spatial, ml):
 
     if ml == "RF":
         ml_module = random_forrest
+    elif ml == "NN":
+        ml_module = neural_network
     else:
         ml_module = None
 
@@ -98,17 +100,17 @@ def module_selection(spatial, ml):
 
 def main():
     # the dataset name
-    dataset = "syntheticData1"  # "kingHousePrices"
+    dataset = "kingHousePrices" # "syntheticData1"  # "kingHousePrices"
 
     # reading the dataset values
     X_training, coords_training, y_training, X_test, coords_test, y_test = read_input(dataset, False)
 
     # selecting spatial and ml modules
-    spatial_module, ML_module = module_selection("GWR", "RF")
+    spatial_module, ML_module = module_selection("GWR", "NN")
 
     # creating the A-GWR setting
     A_GWR_config = {"process_count": 4, "divide_method": "equalCount",
-                    "divide_sections": [1, 2], "pipelined": True}  # a-gwr configurations
+                    "divide_sections": [4, 5], "pipelined": True}  # a-gwr configurations
     A_GWR = ModularFramework(spatial_module, ML_module, A_GWR_config)
 
     # train model
