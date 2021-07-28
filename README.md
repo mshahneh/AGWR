@@ -7,7 +7,7 @@ Implimentation of A-GWR modular framework and S-MGWR spatial model.
 * [How to install](#how-to-install)
     + Libraries
     + MGWR and GWR
-* [Quick Start](Quick-start)
+* [Quick Start](#quick-start)
 * [How does it work](#How-does-it-work)
     + What is the Modular framework
       - Pipeline
