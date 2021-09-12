@@ -42,7 +42,9 @@ class ModularFramework:
 
         if isinstance(fast_model, list):
             self.fast_model = fast_model
+            self.return_list_predict = True
         else:
+            self.return_list_predict = False
             self.fast_model = [fast_model]
         self.divider = None
         self.spatial_learners = None
@@ -208,7 +210,7 @@ class ModularFramework:
                 else:
                     resy = sm_results
                 res_array.append(resy)
-            if len(self.fast_model) == 1:
+            if not self.return_list_predict:
                 return res_array[0]
             else:
                 return res_array
