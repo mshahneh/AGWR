@@ -1,36 +1,17 @@
 # importing the libraries
-import geopandas as gpd
-import json
-from bokeh.io import show
-from bokeh.models import (CDSView, ColorBar, ColumnDataSource,
-                          CustomJS, CustomJSFilter,
-                          GeoJSONDataSource, HoverTool,
-                          LinearColorMapper, Slider)
-from bokeh.layouts import column, row, widgetbox
-from bokeh.palettes import brewer
-from bokeh.plotting import figure
-from bokeh.palettes import Spectral4
-import pandas as pd
 import numpy as np
 import pickle
 import os
-import random
 import os
 import pickle
-from SMGWR.SMGWRModel import SMGWRModel
 from ModularFramework.ModularFramework import ModularFramework
-from mgwr.gwr import GWR, MGWR
-from mgwr.sel_bw import Sel_BW
 import utils as utils
-import warnings
-import time
-from SMGWR.Hyperband import Hyperband
-from sklearn.ensemble import RandomForestRegressor
 import numpy as np
-from SMGWR.SpaceSearch import SpaceSearch
+import time
+import math
 import multiprocessing
 from helpers.SampleModules.SpatialModules import gwr_module, mgwr_module, smgwr_module
-from helpers.SampleModules.MLModules import random_forrest, neural_network
+from helpers.SampleModules.MLModules import random_forrest, neural_network, xgb
 from ModularFramework.ModularFramework import ModularFramework
 
 
@@ -56,6 +37,11 @@ def read_input(dataset, validation=False):
         y = pickle.load(filehandle)
     with open(path + 'coords.data', 'rb') as filehandle:
         coords = pickle.load(filehandle)
+
+    x = x.astype(float)
+    y = y.astype(float)
+    coords = coords.astype(float)
+
 
     X_training, X_validation, X_test = x[training_idx, :], x[validation_idx], x[test_idx, :]
     y_training, y_validation, y_test = y[training_idx, :], y[validation_idx], y[test_idx, :]
@@ -92,6 +78,8 @@ def module_selection(spatial, ml):
         ml_module = random_forrest
     elif ml == "NN":
         ml_module = neural_network
+    elif ml == "XGB":
+        ml_module = xgb
     else:
         ml_module = None
 
@@ -100,26 +88,65 @@ def module_selection(spatial, ml):
 
 def main():
     # the dataset name
-    dataset = "syntheticData1"  # "kingHousePrices"
+    data_sets = ["kingHousePrices", "syntheticData2", "syntheticData1"]
+    rep_count = 1
 
-    # reading the dataset values
-    X_training, coords_training, y_training, X_test, coords_test, y_test = read_input(dataset, False)
+    for dataset in data_sets:
+        print(dataset, ":\n")
 
-    # selecting spatial and ml modules
-    spatial_module, ML_module = module_selection("GWR", "NN")
+        # reading the dataset values
+        X_training, coords_training, y_training, X_test, coords_test, y_test = read_input(dataset, False)
 
-    # creating the A-GWR setting
-    A_GWR_config = {"process_count": 4, "divide_method": "equalCount",
-                    "divide_sections": [1, 2], "pipelined": True}  # a-gwr configurations
-    A_GWR = ModularFramework(spatial_module, ML_module, A_GWR_config)
+        spatial_module, ML_module = module_selection("SMGWR", "XGB")
+        nn = ML_module(X_training, coords_training, y_training)
 
-    # train model
-    A_GWR.train(X_training, coords_training, y_training)
+        D_test = np.concatenate((X_test, coords_test), axis=1)
+        pred = nn.predict(D_test)
+        test_r2 = utils.R2(y_test.reshape(-1).tolist(), pred)
+        print("NN test", test_r2)
 
-    # predict and print result
-    pred = A_GWR.predict(X_test, coords_test, y_test)
-    test_r2 = utils.R2(y_test.reshape(-1).tolist(), pred)
-    print(test_r2)
+        D_train = np.concatenate((X_training, coords_training), axis=1)
+        pred = nn.predict(D_train)
+        test_r2 = utils.R2(y_training.reshape(-1).tolist(), pred)
+        print("NN train", test_r2)
+        mean_time = 0
+        mean_res = 0
+        for rep in range(rep_count):
+            start_time = time.time()
+
+            # selecting spatial and ml modules
+            spatial_module, ML_module = module_selection("SMGWR", "XGB")
+
+            # creating the A-GWR setting
+            temp = len(X_training)
+            temp /= 900
+            processes = min(multiprocessing.cpu_count(), math.ceil(temp))
+            sec1 = max(1, math.floor(temp ** (0.5)))
+            sec2 = max(1, math.ceil(temp ** (0.5)))
+
+            print(sec1, sec2)
+
+            A_GWR_config = {"process_count": processes, "divide_method": "equalCount",
+                            "divide_sections": [sec1, sec2], "pipelined": False}  # a-gwr configurations
+            A_GWR = ModularFramework(spatial_module, ML_module, A_GWR_config)
+
+            # train model
+            A_GWR.train(X_training, coords_training, y_training)
+
+            end_time = time.time()
+
+            # predict and print result
+            pred = A_GWR.predict(X_test, coords_test, y_test)
+            test_r2 = utils.R2(y_test.reshape(-1).tolist(), pred)
+
+            mean_time += end_time-start_time
+            mean_res += test_r2
+            print(rep, end_time-start_time, test_r2)
+        
+        print("\n", mean_time/rep_count, mean_res/rep_count)
+        print("\n")
+    
+
 
 
 if __name__ == "__main__":

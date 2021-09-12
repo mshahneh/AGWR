@@ -393,10 +393,16 @@ class SpaceSearch:
             for _ in range(self.smgwr.numberOfFeatures):
                 temp_min = max(Min, starting[_]-config["locality_range"])
                 temp_max = min(Max, self.smgwr.train_len-1, starting[_]+config["locality_range"])
+                if temp_min > temp_max:
+                    temp_min, temp_max = temp_max, temp_min
                 pbounds['bandwidth' + str(_)] = (temp_min, temp_max)
         else:
             for _ in range(self.smgwr.numberOfFeatures):
-                pbounds['bandwidth' + str(_)] = (Min, min(Max, self.smgwr.train_len-1))
+                temp_min = Min
+                temp_max = min(Max, self.smgwr.train_len-1)
+                if temp_min > temp_max:
+                    temp_min, temp_max = temp_max, temp_min
+                pbounds['bandwidth' + str(_)] = (temp_min, temp_max)
 
         optimizer = BayesianOptimization(
             f=self.bayesian_optimization_evaluate,
@@ -405,6 +411,7 @@ class SpaceSearch:
             verbose=0
         )
 
+        # print(starting, config["random_count"], config["iter_count"])
         optimizer.probe(starting, lazy=True)
         optimizer.maximize(
             init_points=config["random_count"],

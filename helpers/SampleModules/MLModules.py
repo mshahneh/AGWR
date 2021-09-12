@@ -1,4 +1,10 @@
 from sklearn.ensemble import RandomForestRegressor
+
+from numpy import loadtxt
+import xgboost
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.neural_network import MLPRegressor
 import numpy as np
 import random
 
@@ -12,9 +18,26 @@ def random_forrest(_x, _coords, _y, process_count=-1):
 
 def neural_network(_x, _coords, _y, process_count=-1):
     D_train = np.concatenate((_x, _coords), axis=1)
-    nn = NN(200)
+    nn = NN(400)
     nn.train(D_train, _y.reshape(-1, ))
+    # print("nn was trained", nn.W, nn.v)
     return nn
+
+
+def xgb(_x, _coords, _y, process_count=-1):
+    mxgb = xgboost.XGBRegressor()
+    D_train = np.concatenate((_x, _coords), axis=1)
+    mxgb.fit(D_train, _y.reshape(-1, ))
+    return mxgb
+
+def MLP(_x, _coords, _y, process_count=-1):
+    layers = 300
+    D_train = np.concatenate((_x, _coords), axis=1)
+    clf = MLPRegressor(learning_rate='adaptive', alpha=0.001)
+    # print("hi", _y.reshape(-1, ).shape)
+    clf.fit(D_train, _y.reshape(-1, ))
+    # print("ye")
+    return clf
 
 
 class NN:
@@ -25,7 +48,7 @@ class NN:
 
     def train(self, _x, _y):
         _x = np.c_[_x, np.ones(len(_x))]
-        v, W = self.nural_classifier(self.nodes, _x, _y, 0.1)
+        v, W = self.nural_classifier(self.nodes, _x, _y, 0.5)
         self.v = v
         self.W = W
 
@@ -38,10 +61,10 @@ class NN:
         v = np.random.normal(0, 1 / 100, k)
         # eta=15  # learning rate
         N = X.shape[0]
-        ITNUM = 5 * N
+        ITNUM = 30 * N
         for it in range(ITNUM):
             if it % (N//4) == 0:
-                eta = 0.97 * eta
+                eta = 0.95 * eta
                 # print(it)
                 # print(v, W)
             i = random.randint(0, N - 1)
