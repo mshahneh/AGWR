@@ -5,6 +5,7 @@ import xgboost
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler  
 import numpy as np
 import random
 
@@ -31,9 +32,9 @@ def xgb(_x, _coords, _y, process_count=-1):
     return mxgb
 
 def MLP(_x, _coords, _y, process_count=-1):
-    layers = 300
+    layers = 700
     D_train = np.concatenate((_x, _coords), axis=1)
-    clf = MLPRegressor(learning_rate='adaptive', alpha=0.001)
+    clf = MLPRegressor(hidden_layer_sizes=(layers, layers, ))
     # print("hi", _y.reshape(-1, ).shape)
     clf.fit(D_train, _y.reshape(-1, ))
     # print("ye")

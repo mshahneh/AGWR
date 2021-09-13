@@ -13,6 +13,7 @@ from helpers.Visualizer.visualizer import visualizer
 from helpers.SampleModules.SpatialModules import gwr_module, mgwr_module, smgwr_module
 from helpers.SampleModules.MLModules import random_forrest, neural_network, xgb, MLP
 from ModularFramework.ModularFramework import ModularFramework
+from sklearn.preprocessing import StandardScaler  
 
 
 # read input
@@ -106,6 +107,10 @@ def solve(spatial_module_name, ML_module_names, dataset):
                 continue
             start_time = time.time()
             ml = ML_module[i](X_training, coords_training, y_training)
+
+            D_train = np.concatenate((X_training, coords_training), axis=1)
+            pred = ml.predict(D_train)
+            print('train error', pred[0], y_training[0], utils.R2(y_training.reshape(-1).tolist(), pred))
             D_test = np.concatenate((X_test, coords_test), axis=1)
             end_time = time.time()
 
@@ -147,8 +152,8 @@ def solve(spatial_module_name, ML_module_names, dataset):
 def main():
     # the dataset name
     # spatial_module_names = [None, "GWR", "SMGWR"]
-    spatial_module_names = ["GWR"]
-    ML_module_names = [None]
+    spatial_module_names = [None]
+    ML_module_names = ["RF", "MLP"]
     # data_sets = ["pysalGeorgia"]
     data_sets = ["pysalTokyo", "pysalGeorgia", "pysalClearwater", "pysalBerlin", "syntheticData1", "syntheticData2", "kingHousePrices"]
     rep_count = 5

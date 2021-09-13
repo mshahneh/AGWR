@@ -5,14 +5,14 @@ import numpy as np
 import random
 import pickle
 import os
-from storeData import store
+from Data.DataHandlers.storeData import store
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import warnings
 warnings.filterwarnings('ignore')
 
-path = "../../Data/NYCAirBnb"
+path = os.path.dirname(os.path.abspath(__file__ + str("/../../"))) + "/Data/NYCAirBnb/"
 airbnb = pd.read_csv(path + "/AB_NYC_2019.csv")
 
 
@@ -42,4 +42,5 @@ airbnb.to_csv(path + "/data.csv")
 data = airbnb.drop(columns=['price', 'latitude', 'longitude'])
 
 x = data.values
-store(x, y, coords, path)
+for i in range(1, 6):
+    store(x, y, coords, path, i)
