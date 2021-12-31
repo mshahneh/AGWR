@@ -23,13 +23,13 @@ def b2(loc1, loc2, l):
 
 
 def b3(loc1, loc2, l):
-    temp1 = (l / 4 - (loc1 / 2)) ** 2
-    temp2 = (l / 4 - (loc2 / 2)) ** 2
-    return l - ((1 / 500) * ((l / 4) ** 2 - temp1) * ((l / 4) ** 2 - temp2))
+    return 5+((1/4)*int(loc1/5))
 
 
 def b4(loc1, loc2, l):
-    return b2(loc1, loc2, l)
+    temp1 = (l/4 - (loc1 / 2)) ** 2
+    temp2 = (l/4 - (loc2 / 2)) ** 2
+    return l - ((1 / 500) * ((l/4)**2 - temp1) * ((l/4)**2 - temp2))
 
 
 
@@ -50,7 +50,7 @@ def synthetic_data_generator(l, dim = 5):
                 y += x[k]*visual[i, j, k]
             x.append(gauss(0, 1))
             visual[i, j, k] = globals()['b'+str(dim-1)](u[i], v[j], l)
-            y += 15*(x[k]**2)*(visual[i, j, k])
+            y += ((1/4*x[k]*x[k-1])**2)*(visual[i, j, k])
             y += gauss(0, 0.5)
             data['coords'].append((u[i], v[j]))
             data['y'].append(y)
@@ -65,8 +65,10 @@ def synthetic_data_generator(l, dim = 5):
     x = (x - np.mean(x, axis=0)) / np.std(x, axis=0)
     n = len(y)
 
+    print(np.mean(x, axis=0))
+
     path = os.path.dirname(os.path.abspath(
-        __file__ + str("/../../"))) + "/Data/syntheticData2/"
+        __file__ + str("/../../"))) + "/Data/syntheticData3/"
     for i in range(1, 6):
         store(x, y, coords, path, i)
 

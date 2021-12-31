@@ -55,9 +55,9 @@ def smgwr_module(_x, _coords, _y, learned_bandwidths=[], process_count=-1):
             except Exception as inst:
                 print("**error**", inst)
         else:
-            bandwidths, _ = SP.successive_halving(64, 64, -1, 4)
+            bandwidths, _ = SP.successive_halving(100, 64, -1, 4)
             bandwidths = list(bandwidths.values())
-            if len(bandwidths) <= 6:
+            if len(bandwidths) <= 5:
                 bandwidths = SP.thorough_search(bandwidths, {})
             sim_config = {"steps": 10}
             bandwidths = SP.SPSA(bandwidths, sim_config)

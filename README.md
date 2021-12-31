@@ -20,6 +20,7 @@ Implimentation of A-GWR modular framework and S-MGWR spatial model.
     + S-MGWR
       - SpaceSearch
       - Cache
+* [Results](#Results)
 
 # How to Install
 
@@ -142,3 +143,13 @@ implemented. These methods implemented are:
 We have also implemented an LRU cache system to store the weights computed for recently used bandwidths
 
 
+
+# Results
+|               | pGeorgia         | pTokyo          | pClrwatr        | pBerlin         | synthData1      | synthData2       | kingHousePrices  | NYCAirBnb        |
+|---------------|------------------|-----------------|-----------------|-----------------|-----------------|------------------|------------------|------------------|
+|               | 1-R<sup>2</sup>  | 1-R<sup>2</sup> | 1-R<sup>2</sup> | 1-R<sup>2</sup> | 1-R<sup>2</sup> | 1-R<sup>2</sup>  | 1-R<sup>2</sup>  | 1-R<sup>2</sup>  |
+| A-GWR         | 0.4161 ± 0.05    | 0.0164 ± 0.0017 | 0.9226 ± 0.0645 | 0.6821 ± 0.0145 | 0.0137 ± 0.0008 | 0.061 ± 0.0068   | 0.1109  | 0.4181           |
+| MGWR          | 0.4913 ± 0.0689  | 0.0226 ± 0.0038 | 0.9622 ± 0.0713 | 0.6965 ± 0.0039 | 0.0139 ± 0.0014 | 0.0999 ±  0.009  |          0.1341        |       0.4378           |
+| GWR           | 0.3914 ± 0.0629  | 0.0215 ± 0.0032 | 0.9265 ± 0.0577 | 0.6876 ± 0.0076 | 0.0805 ± 0.0108 | 0.1168 ± 0.0068  | 0.1295   |      0.4284            |
+| Random Forest | 0.3878 ± 0.0346  | 0.0352 ± 0.0024 | 0.9276 ± 0.0589 | 0.5825 ± 0.0094 | 0.1788 ± 0.0041 | 0.1240 ± 0.0019  | 0.1216   | 0.3927  |
+| XGBoost       | 0.6229 ± 0.0832  | 0.0359 ± 0.0026 | 1.0304 ± 0.0561 | 0.6942 ± 0.0182 | 0.1634 ± 0.0051 | 0.1042 ±  0.0008 | 0.1165   | 0.4092  |

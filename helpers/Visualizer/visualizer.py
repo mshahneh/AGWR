@@ -8,13 +8,21 @@ def latex(dict):
 
 def table(dict):
     spatial_methods = list(dict.keys())
-    ml_methods = list(dict[spatial_methods[0]].keys())
+    ml_methods = set()
+
+    for spatial_method in spatial_methods:
+        for ml_method in dict[spatial_method].keys():
+            ml_methods.add(ml_method)
+    ml_methods = list(ml_methods)
 
     datasets = set()
     for spatial_method in spatial_methods:
         for ml_method in ml_methods:
-            for dataset in dict[spatial_method][ml_method].keys():
-                datasets.add(dataset)
+            if ml_method in dict[spatial_method].keys():
+                for dataset in dict[spatial_method][ml_method].keys():
+                    datasets.add(dataset)
+    datasets = list(datasets)
+    datasets = sorted(datasets)
     # datasets = list(dict[spatial_methods[0]][ml_methods[0]].keys())
     temp = ['method']
     temp.extend(datasets)
@@ -23,6 +31,8 @@ def table(dict):
     for spatial_method in spatial_methods:
         for ml_method in ml_methods:
             if spatial_method == None and ml_method == None:
+                continue
+            if ml_method not in dict[spatial_method].keys():
                 continue
             try:
                 train_times = [str(spatial_method) + " + " + str(ml_method)]
@@ -39,10 +49,10 @@ def table(dict):
                         mean_errors = '-'
                     else:
                         mean_time = round(np.mean(times), 2)
-                        mean_errors = round(np.mean(errors), 4)
+                        mean_errors = round(np.mean(errors), 4) #round(errors[0], 4)#len(errors)#
 
                     train_times.append(mean_time)
-                    r2_errors.append(str(mean_errors) + " + " + str(round(np.std(errors), 4)))
+                    r2_errors.append(str(len(errors)) + "  " + str(mean_errors) + " + " + str(round(np.std(errors)/(len(errors)**0.5), 4)))
                 table_times.add_row(train_times)
                 table_errors.add_row(r2_errors)
             except:
@@ -63,7 +73,7 @@ def visualizer(dict, type="table"):
         html(dict)
 
 def main():
-    path = path = os.path.dirname(os.path.abspath(__file__ + "/../../")) + "/fast_all_models.p"
+    path = path = os.path.dirname(os.path.abspath(__file__ + "/../../")) + "/tempExamples/oldExamples/new_rf_and_xgb_on_nyc.p"
     dict = pickle.load( open( path, "rb" ) )
     type = "table"
 

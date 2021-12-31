@@ -124,6 +124,7 @@ class ModularFramework:
                 sm_coords = coords_train[sm_indices]
                 D_test = np.concatenate((sm_x, sm_coords), axis=1)
                 fm_pred = fm_learner.predict(D_test).reshape((-1, 1))
+
                 sm_y = y_train[sm_indices] - fm_pred
                 if ggwr_flag:
                     sm_learner = self.spatial_model(sm_x, sm_coords, sm_y, learned_bandwidths)
