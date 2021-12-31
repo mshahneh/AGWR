@@ -39,9 +39,16 @@ class ModularFramework:
         self.config = config
 
         self.spatial_model = spatial_model
-        self.fast_model = fast_model
+
+        if isinstance(fast_model, list):
+            self.fast_model = fast_model
+            self.return_list_predict = True
+        else:
+            self.return_list_predict = False
+            self.fast_model = [fast_model]
         self.divider = None
-        self.learners = None
+        self.spatial_learners = None
+        self.ml_learners = None
         if config["process_count"] is not None:
             self.process_count = config["process_count"]
         else:
@@ -69,8 +76,8 @@ class ModularFramework:
         else:
             sm_learner = self.spatial_model(sm_x, sm_coords, sm_y)
 
-        self.learners[i] = {"sm": sm_learner}
-        if isinstance(sm_learner, GWR):
+        self.spatial_learners[i] = sm_learner
+        if isinstance(sm_learner, GWR): #a copy is required due to a problem in mgwr/gwr library implementation
             sm_learner = self.spatial_model(sm_x, sm_coords, sm_y)
 
         temp_pred = sm_learner.predict(sm_coords, sm_x)
@@ -79,7 +86,7 @@ class ModularFramework:
             for _ in sm_learner.bandwidths:
                 learned_bandwidths.append(_)
 
-        return prediction_array.reshape((-1, 1)), self.learners[i]
+        return prediction_array.reshape((-1, 1)), self.spatial_learners[i]
 
     def train(self, x_train, coords_train, y_train):
         """
@@ -90,8 +97,11 @@ class ModularFramework:
         self.divider = Divider(self.config["divide_sections"], self.config["divide_method"], self.config["overlap"])
         self.divider.divide(coords_train)
         numberOfLearners = len(self.divider.section_indices)
-        self.learners = [{} for _ in range(numberOfLearners)]
+        self.spatial_learners = [None] * numberOfLearners
         if "pipelined" not in self.config.keys() or not self.config["pipelined"]:  # performs ensemble
+            if (len(self.fast_model) > 1):
+                raise "multi ml model not supported for the ensumble architecture"
+            self.ml_learners = [None] * numberOfLearners
             learned_bandwidths = []
             ggwr_flag = False
             for i in range(numberOfLearners):
@@ -108,12 +118,13 @@ class ModularFramework:
                 fm_x = x_train[fm_indices]
                 fm_y = y_train[fm_indices]
                 fm_coords = coords_train[fm_indices]
-                fm_learner = self.fast_model(fm_x, fm_coords, fm_y)
+                fm_learner = self.fast_model[0](fm_x, fm_coords, fm_y)
 
                 sm_x = x_train[sm_indices]
                 sm_coords = coords_train[sm_indices]
                 D_test = np.concatenate((sm_x, sm_coords), axis=1)
                 fm_pred = fm_learner.predict(D_test).reshape((-1, 1))
+
                 sm_y = y_train[sm_indices] - fm_pred
                 if ggwr_flag:
                     sm_learner = self.spatial_model(sm_x, sm_coords, sm_y, learned_bandwidths)
@@ -122,9 +133,11 @@ class ModularFramework:
                 if isinstance(sm_learner, SMGWRModel):
                     ggwr_flag = True
                     learned_bandwidths = sm_learner.bandwidths
-                self.learners[i] = {"fm": fm_learner, "sm": sm_learner}
+                self.spatial_learners[i] = sm_learner
+                self.ml_learners[i] = fm_learner
 
         else: #performs pipeline
+            self.ml_learners = [None] * len(self.fast_model)
             learned_bandwidths = []
             ggwr_flag = False
             sm_preds = np.zeros(len(y_train)).reshape((-1, 1))
@@ -138,11 +151,16 @@ class ModularFramework:
                                                  y_train=y_train, learned_bandwidths=learned_bandwidths), listOfLearners)
             p.close()
             for i in range(numberOfLearners):
-                self.learners[i] = prediction_array[i][1]
+                self.spatial_learners[i] = prediction_array[i][1]
                 sm_indices = self.divider.section_indices[i]
                 sm_preds[sm_indices] = prediction_array[i][0]
-            fm_learner = self.fast_model(x_train, coords_train, y_train - sm_preds)
-            self.learners[0]["fm"] = fm_learner
+            
+            for j in range(len(self.fast_model)):
+                if self.fast_model[j] is not None:
+                    fm_learner = self.fast_model[j](x_train, coords_train, y_train - sm_preds)
+                else:
+                    fm_learner = None
+                self.ml_learners[j] = fm_learner
 
         self.train_time = time.time() - train_time
 
@@ -165,8 +183,8 @@ class ModularFramework:
                 selected_X = x_test[indices, :]
 
                 D_test = np.concatenate((selected_X, selected_coords), axis=1)
-                sm_results = self.learners[i]["sm"].predict(selected_coords, selected_X)
-                fm_results = self.learners[i]["fm"].predict(D_test).reshape((-1, 1))
+                sm_results = self.spatial_learners[i].predict(selected_coords, selected_X)
+                fm_results = self.ml_learners[i].predict(D_test).reshape((-1, 1))
                 prediction_array = self._get_predict_array(sm_results)
                 resys[indices, i] = (prediction_array.reshape((-1, 1)) + fm_results).reshape(-1)
             temp = np.sum(resys*weights, axis=1)
@@ -178,17 +196,25 @@ class ModularFramework:
                 selected_coords = coords_test[indices, :]
                 selected_X = x_test[indices, :]
                 prediction_array = self._get_predict_array(
-                    self.learners[i]["sm"].predict(selected_coords, selected_X))
+                    self.spatial_learners[i].predict(selected_coords, selected_X))
                 sm_results[indices, i] = prediction_array.reshape(-1)
                 # sm_results[:, i] = self.learners[i]["sm"].predict(coords_test, x_test).reshape(-1)
             sm_results = sm_results * weights
             sm_results = np.sum(sm_results, axis=1).reshape((-1, 1))
 
             D_test = np.concatenate((x_test, coords_test), axis=1)
-            fm_results = self.learners[0]["fm"].predict(
-                D_test).reshape((-1, 1))
-            resy = sm_results + fm_results
-            return resy
+            res_array = []
+            for j in range(len(self.fast_model)):
+                if self.ml_learners[j] is not None:
+                    fm_results = self.ml_learners[j].predict(D_test).reshape((-1, 1))
+                    resy = sm_results + fm_results
+                else:
+                    resy = sm_results
+                res_array.append(resy)
+            if not self.return_list_predict:
+                return res_array[0]
+            else:
+                return res_array
 
     def _get_predict_array(self, prediction):
         """

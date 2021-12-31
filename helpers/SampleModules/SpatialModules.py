@@ -42,17 +42,27 @@ def smgwr_module(_x, _coords, _y, learned_bandwidths=[], process_count=-1):
         bandwidths = smgwr_model.bandwidths
         # sim_config = {"steps": 30, "updates": 20, "method": "gaussian_same_all"}
         # bandwidths = SP.simulated_annealing(bandwidths, sim_config)
-        # if len(bandwidths) <= 6:
-        #     bandwidths = SP.thorough_search(bandwidths, {})
         # else:
         #     bandwidths = SP.bayesian_optimization(bandwidths, {"random_count": 50, "iter_count": 50})
         if _x.shape[0] > 500:
             bandwidths, _ = SP.successive_halving(256, 64, -1, 4)
             bandwidths = list(bandwidths.values())
-        sim_config = {"steps": 10}
-        bandwidths = SP.SPSA(bandwidths, sim_config)
-        bandwidths = SP.bayesian_optimization(bandwidths, {"is_local": True, "locality_range": 20,
-                                                           "random_count": 25, "iter_count": 40})
+            sim_config = {"steps": 10}
+            bandwidths = SP.SPSA(bandwidths, sim_config)
+        # print(bandwidths)
+            try:
+                bandwidths = SP.bayesian_optimization(bandwidths, {"is_local": True, "locality_range": 20, "random_count": 25, "iter_count": 40})
+            except Exception as inst:
+                print("**error**", inst)
+        else:
+            bandwidths, _ = SP.successive_halving(100, 64, -1, 4)
+            bandwidths = list(bandwidths.values())
+            if len(bandwidths) <= 5:
+                bandwidths = SP.thorough_search(bandwidths, {})
+            sim_config = {"steps": 10}
+            bandwidths = SP.SPSA(bandwidths, sim_config)
+            print('through done')
+
         print("done global")
         sim_config = {"steps": 80, "updates": 50, "method": "gaussian_one"}
         bandwidths = SP.hill_climbing(bandwidths, sim_config)

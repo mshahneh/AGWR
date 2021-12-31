@@ -12,8 +12,9 @@ psDatas = ['pysalGeorgia', 'pysalBerlin', 'pysalTokyo', 'pysalClearwater']
 
 for dataset in psDatas:
     if dataset == "pysalClearwater":
-        clearwater = ps.io.open(get_path('landslides.csv'))
-        data = pd.DataFrame(clearwater.data, columns=clearwater.header)
+        data = os.path.dirname(os.path.abspath(
+            __file__ + str("/../../"))) + "/Data/pysalClearwater/landslides.csv"
+        data = pd.read_csv(data)
         coords = list(zip(data['X'], data['Y']))
         coords = [list(item) for item in coords]
         coords = np.asanyarray(coords).astype(float)
@@ -38,20 +39,9 @@ for dataset in psDatas:
        # x = data.by_col_array(
        #     ["PctRural", "PctEld", "PctFB", "PctPov", "PctBlack"])
 
-    if dataset == "pysalBaltimore":
-        f = ps.io.open(ps.examples.get_path("baltim.shp"))
-        print(f.header)
-        data = ps.io.open(ps.examples.get_path("baltim.csv"))
-        coords = list(zip(data.by_col('X'), data.by_col('Y')))
-        coords = [list(item) for item in coords]
-        coords = np.asanyarray(coords)
-        y = np.array(data.by_col('PRICE')).reshape((-1, 1))
-        x = data.by_col_array(
-            ["NROOM", "NBATH", "NSTOR", "GAR", "AGE", "SQFT", "PATIO", "AC", "BMENT"])
-
     if dataset == "pysalBerlin":
         data = os.path.dirname(os.path.abspath(
-            __file__ + str("/../../"))) + "/Data/pysalBaltimore/prenzlauer.csv"
+            __file__ + str("/../../"))) + "/Data/pysalBerlin/prenzlauer.csv"
         data = pd.read_csv(data)
         y = np.log(data['price'].values.reshape((-1, 1)))
         x = data[['review_scores_rating',
@@ -65,5 +55,6 @@ for dataset in psDatas:
         coords = np.asanyarray(coords)
 
     path = os.path.dirname(os.path.abspath(
-        __file__ + str("/../../"))) + "/Data/" + dataset
-    store(x, y, coords, path)
+        __file__ + str("/../../"))) + "/Data/" + dataset +"/"
+    for i in range(1, 6):
+        store(x, y, coords, path, i)

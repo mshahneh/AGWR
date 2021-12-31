@@ -5,10 +5,10 @@ import numpy as np
 import random
 import pickle
 import os
-from storeData import store
+from Data.DataHandlers.storeData import store
 
-path = "../../Data/kingHousePrices"
-data = pd.read_csv(path + "/kc_house_data.csv")
+path = os.path.dirname(os.path.abspath(__file__ + str("/../../"))) + "/Data/kingHousePrices/"
+data = pd.read_csv(path + "kc_house_data.csv")
 print(data.shape, data.keys())
 
 data = data[data["yr_renovated"] == 0]
@@ -44,5 +44,5 @@ data.to_csv(path + "/data.csv")
 data = data.drop(columns=['price', 'lat', 'long'])
 
 x = data.values
-
-store(x, y, coords, path)
+for i in range(1, 6):
+    store(x, y, coords, path, i)

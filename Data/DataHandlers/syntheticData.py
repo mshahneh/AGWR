@@ -7,6 +7,7 @@ from Data.DataHandlers.storeData import store
 import pickle
 import os
 
+seed(42)
 
 def b0(loc1, loc2, l):
     return 3
@@ -63,7 +64,9 @@ def synthetic_data_generator(l, dim = 3):
 
     path = os.path.dirname(os.path.abspath(
         __file__ + str("/../../"))) + "/Data/syntheticData1/"
-    store(x, y, coords, path)
+
+    for i in range(1, 6):
+        store(x, y, coords, path, i)
 
     with open(path + '/_generated_data', 'wb') as file_handle:
         pickle.dump(data, file_handle)
